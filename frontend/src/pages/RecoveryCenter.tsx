@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   RefreshCw,
   Mail,
@@ -8,9 +10,71 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+import { payments } from "../data/payments";
+import type { Payment } from "../types/payment";
+import {
+  analyzePayment,
+  type RecoveryDecision,
+} from "../services/recoveryEngine";
+import {
+  validateRecoveryAction,
+  type PolicyResult,
+} from "../services/policyEngine";
+
 import "../css/recovery.css";
 
 function RecoveryCenter() {
+  const [selectedPaymentId, setSelectedPaymentId] = useState("");
+
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(
+    null
+  );
+
+  const [decision, setDecision] = useState<RecoveryDecision | null>(null);
+
+  const [policyResult, setPolicyResult] = useState<PolicyResult | null>(null);
+
+  const [executionStatus, setExecutionStatus] = useState<string | null>(null);
+
+  const handleAnalyzeRecovery = () => {
+    setExecutionStatus(null);
+
+    const payment = payments.find((item) => item.id === selectedPaymentId);
+
+    if (!payment) {
+      return;
+    }
+
+    const recoveryDecision = analyzePayment(payment);
+
+    const policy = validateRecoveryAction(payment, recoveryDecision);
+
+    setSelectedPayment(payment);
+    setDecision(recoveryDecision);
+    setPolicyResult(policy);
+  };
+
+  const handleExecuteRecovery = () => {
+    if (!policyResult || !decision) {
+      return;
+    }
+
+    if (!policyResult.allowed) {
+      setExecutionStatus("Recovery action requires human approval.");
+      return;
+    }
+
+    if (decision.recommendedAction === "Wait and Retry") {
+      setExecutionStatus(
+        "Retry scheduled successfully. Payment recovery is now in progress."
+      );
+    } else if (decision.recommendedAction === "Send Reminder") {
+      setExecutionStatus("Payment reminder scheduled successfully.");
+    } else {
+      setExecutionStatus("Recovery workflow initiated successfully.");
+    }
+  };
+
   return (
     <div className="recovery-page">
       {/* Page Header */}
@@ -20,6 +84,90 @@ function RecoveryCenter() {
           <p>Monitor active revenue recovery workflows.</p>
         </div>
       </div>
+
+      <div className="recovery-selector">
+        <div>
+          <label>Select At-Risk Payment</label>
+
+          <select
+            value={selectedPaymentId}
+            onChange={(event) => setSelectedPaymentId(event.target.value)}
+          >
+            <option value="">Select a payment</option>
+
+            {payments
+              .filter((payment) => payment.status === "at_risk")
+              .map((payment) => (
+                <option key={payment.id} value={payment.id}>
+                  {payment.id} — {payment.customer} — ₹
+                  {payment.amount.toLocaleString("en-IN")}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <button onClick={handleAnalyzeRecovery} disabled={!selectedPaymentId}>
+          Analyze Recovery
+        </button>
+      </div>
+
+      {selectedPayment && decision && policyResult && (
+        <section className="recovery-result">
+          <h2>Recovery Analysis</h2>
+
+          <div className="result-row">
+            <span>Payment</span>
+            <strong>{selectedPayment.id}</strong>
+          </div>
+
+          <div className="result-row">
+            <span>Failure Reason</span>
+            <strong>{selectedPayment.failureReason}</strong>
+          </div>
+
+          <div className="result-row">
+            <span>AI Diagnosis</span>
+            <strong>{decision.diagnosis}</strong>
+          </div>
+
+          <div className="result-row">
+            <span>Recommended Action</span>
+            <strong>{decision.recommendedAction}</strong>
+          </div>
+
+          <div className="result-row">
+            <span>Confidence</span>
+            <strong>{decision.confidence}</strong>
+          </div>
+
+          <div className="result-row">
+            <span>Policy Status</span>
+            <strong className={policyResult.allowed ? "allowed" : "blocked"}>
+              {policyResult.allowed ? "Allowed" : "Human Approval Required"}
+            </strong>
+          </div>
+
+          <div className="policy-reason">
+            <strong>Policy Explanation:</strong>
+            <p>{policyResult.reason}</p>
+          </div>
+
+          <div className="recovery-action-section">
+            <button
+              className="execute-recovery-button"
+              onClick={handleExecuteRecovery}
+            >
+              {policyResult.allowed
+                ? "Execute Recovery Action"
+                : "Request Human Approval"}
+            </button>
+
+            {executionStatus && (
+              <div className="execution-status">{executionStatus}</div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Recovery Summary */}
       <div className="recovery-stats">
