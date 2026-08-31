@@ -1,0 +1,206 @@
+.audit-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Summary */
+
+.audit-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.audit-summary-card {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  padding: 20px;
+}
+
+.audit-summary-card span {
+  display: block;
+
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.audit-summary-card strong {
+  display: block;
+
+  margin-top: 8px;
+
+  font-size: 24px;
+  color: #111827;
+}
+
+/* Section */
+
+.audit-section {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  padding: 24px;
+}
+
+/* Audit List */
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0;
+}
+
+.audit-item {
+  display: grid;
+
+  grid-template-columns: 46px 1fr;
+
+  gap: 16px;
+
+  padding: 20px 0;
+
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Icons */
+
+.audit-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+}
+
+.failure-event {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.ai-event {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.policy-event {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.action-event {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.success-event {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.blocked-event {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+/* Content */
+
+.audit-content-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audit-content h3 {
+  font-size: 15px;
+  color: #111827;
+}
+
+.audit-content p {
+  margin-top: 6px;
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  color: #6b7280;
+}
+
+.audit-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Tags */
+
+.audit-tag {
+  display: inline-block;
+
+  margin-top: 10px;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.failure-tag {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.ai-tag {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.policy-tag {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.action-tag {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.success-tag {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.blocked-tag {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+/* Responsive */
+
+@media (max-width: 1000px) {
+  .audit-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .audit-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-content-top {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 5px;
+  }
+}

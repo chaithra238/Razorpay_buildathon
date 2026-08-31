@@ -1,0 +1,10 @@
+.main-content {
+  margin-left: 250px;
+  min-height: 100vh;
+
+  background: #f8fafc;
+}
+
+.page-content {
+  padding: 32px;
+}

@@ -1,0 +1,65 @@
+.header {
+  height: 80px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: white;
+
+  padding: 0 32px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-left h1 {
+  font-size: 22px;
+  color: #111827;
+}
+
+.header-left p {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.notification-button {
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  color: #6b7280;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-profile > svg {
+  color: #2563eb;
+}
+
+.user-profile div {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #6b7280;
+}

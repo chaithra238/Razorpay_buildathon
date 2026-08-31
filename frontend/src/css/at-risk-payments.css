@@ -1,0 +1,63 @@
+/* Search and Filters */
+
+.payment-controls {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 20px;
+}
+
+.payment-controls input {
+  flex: 1;
+
+  padding: 10px 14px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  outline: none;
+
+  font-size: 13px;
+}
+
+.payment-controls input:focus {
+  border-color: #2563eb;
+}
+
+.payment-controls select {
+  padding: 10px 12px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background: white;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+.no-payments {
+  text-align: center;
+
+  padding: 30px !important;
+
+  color: #6b7280;
+}
+
+/* Responsive */
+
+@media (max-width: 800px) {
+
+  .payment-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-controls select {
+    width: 100%;
+  }
+
+}
