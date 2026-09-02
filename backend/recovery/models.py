@@ -42,10 +42,11 @@ class Payment(models.Model):
 
 class RecoveryCase(models.Model):
     STATUS_CHOICES = [
-        ("waiting", "Waiting"),
-        ("in_progress", "In Progress"),
+        ("analyzing", "Analyzing"),
+        ("waiting", "Waiting for Execution"),
+        ("in_progress", "Recovery In Progress"),
         ("recovered", "Recovered"),
-        ("human_review", "Human Review"),
+        ("human_review", "Human Review Required"),
     ]
 
     payment = models.OneToOneField(

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   RefreshCw,
@@ -10,21 +10,25 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import { payments } from "../data/payments";
+import { getPayments } from "../services/paymentService";
 import type { Payment } from "../types/payment";
+import type { RecoveryDecision } from "../services/recoveryEngine";
+
 import {
-  analyzePayment,
-  type RecoveryDecision,
-} from "../services/recoveryEngine";
-import {
-  validateRecoveryAction,
-  type PolicyResult,
-} from "../services/policyEngine";
+  analyzeRecovery,
+  executeRecovery,
+} from "../services/recoveryService";
+import type { PolicyResult } from "../services/policyEngine";
 
 import "../css/recovery.css";
 
 function RecoveryCenter() {
   const [selectedPaymentId, setSelectedPaymentId] = useState("");
+
+  const [apiPayments, setApiPayments] = useState<Payment[]>([]);
+
+  const [loadingPayments, setLoadingPayments] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(
     null
@@ -36,43 +40,111 @@ function RecoveryCenter() {
 
   const [executionStatus, setExecutionStatus] = useState<string | null>(null);
 
-  const handleAnalyzeRecovery = () => {
-    setExecutionStatus(null);
+  const [executionMessage, setExecutionMessage] = useState<string | null>(null);
 
-    const payment = payments.find((item) => item.id === selectedPaymentId);
+  const [executionSuccess, setExecutionSuccess] = useState<boolean | null>(null);
+
+  const [recoveryResult, setRecoveryResult] = useState<{
+    success: boolean;
+    message: string;
+    recoveredAmount: number;
+  } | null>(null);
+
+  useEffect(() => {
+
+    const loadPayments = async () => {
+
+      try {
+
+        const data = await getPayments();
+
+        setApiPayments(data);
+
+      } catch (error) {
+
+        console.error("Failed to load payments:", error);
+
+        setLoadingError(
+          "Unable to contact backend API. Using mock data. Is the Django server running?"
+        );
+
+      } finally {
+
+        setLoadingPayments(false);
+
+      }
+
+    };
+
+    loadPayments();
+
+  }, []);
+
+  const handleAnalyzeRecovery = async () => {
+
+    setExecutionStatus(null);
+    setRecoveryResult(null);
+
+    const payment = apiPayments.find((item) => item.id === selectedPaymentId);
 
     if (!payment) {
       return;
     }
 
-    const recoveryDecision = analyzePayment(payment);
+    try {
 
-    const policy = validateRecoveryAction(payment, recoveryDecision);
+      const response = await analyzeRecovery(payment.id);
 
-    setSelectedPayment(payment);
-    setDecision(recoveryDecision);
-    setPolicyResult(policy);
+      setSelectedPayment(response.payment);
+
+      setDecision(response.decision);
+
+      setPolicyResult(response.policy);
+
+    } catch (error) {
+
+      console.error("Recovery analysis failed:", error);
+
+    }
+
   };
 
-  const handleExecuteRecovery = () => {
-    if (!policyResult || !decision) {
+  const handleExecuteRecovery = async () => {
+
+    if (!selectedPayment) {
       return;
     }
 
-    if (!policyResult.allowed) {
-      setExecutionStatus("Recovery action requires human approval.");
-      return;
+    try {
+
+      const response = await executeRecovery(selectedPayment.id);
+
+      setExecutionMessage(response.message);
+
+      setExecutionSuccess(response.success);
+
+      if (response.success) {
+
+        setSelectedPayment({
+          ...selectedPayment,
+
+          status: "recovered",
+
+          recovered: true,
+        });
+
+      }
+
+    } catch (error) {
+
+      console.error("Recovery execution failed:", error);
+
+      setExecutionMessage("Recovery execution failed. Please try again.");
+
+      setExecutionSuccess(false);
+
     }
 
-    if (decision.recommendedAction === "Wait and Retry") {
-      setExecutionStatus(
-        "Retry scheduled successfully. Payment recovery is now in progress."
-      );
-    } else if (decision.recommendedAction === "Send Reminder") {
-      setExecutionStatus("Payment reminder scheduled successfully.");
-    } else {
-      setExecutionStatus("Recovery workflow initiated successfully.");
-    }
   };
 
   return (
@@ -92,10 +164,13 @@ function RecoveryCenter() {
           <select
             value={selectedPaymentId}
             onChange={(event) => setSelectedPaymentId(event.target.value)}
+            disabled={loadingPayments}
           >
-            <option value="">Select a payment</option>
+            <option value="">
+              {loadingPayments ? "Loading payments..." : "Select a payment"}
+            </option>
 
-            {payments
+            {apiPayments
               .filter((payment) => payment.status === "at_risk")
               .map((payment) => (
                 <option key={payment.id} value={payment.id}>
@@ -106,7 +181,7 @@ function RecoveryCenter() {
           </select>
         </div>
 
-        <button onClick={handleAnalyzeRecovery} disabled={!selectedPaymentId}>
+        <button onClick={handleAnalyzeRecovery} disabled={!selectedPaymentId || loadingPayments}>
           Analyze Recovery
         </button>
       </div>
@@ -164,6 +239,28 @@ function RecoveryCenter() {
 
             {executionStatus && (
               <div className="execution-status">{executionStatus}</div>
+            )}
+
+            {recoveryResult && (
+              <div
+                className={
+                  recoveryResult.success ? "recovery-success" : "recovery-pending"
+                }
+              >
+                <h3>
+                  {recoveryResult.success
+                    ? "Recovery Successful"
+                    : "Recovery Pending"}
+                </h3>
+
+                <p>{recoveryResult.message}</p>
+
+                {recoveryResult.success && (
+                  <strong>
+                    ₹{recoveryResult.recoveredAmount.toLocaleString("en-IN")} Recovered
+                  </strong>
+                )}
+              </div>
             )}
           </div>
         </section>
@@ -279,6 +376,12 @@ function RecoveryCenter() {
               <p>How RecoverAI processes a case.</p>
             </div>
           </div>
+
+            {loadingError && (
+              <div className="error-banner">
+                {loadingError}
+              </div>
+            )}
 
           <div className="workflow-list">
             <div className="workflow-step completed">

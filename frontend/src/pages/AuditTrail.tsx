@@ -7,7 +7,56 @@ import {
   Clock,
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
+import type { AuditEvent } from "../types/audit";
+import { getAuditEvents } from "../services/auditApiService";
+
 import "../css/audit.css";
+
+function AuditTrailEvents() {
+  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getAuditEvents();
+        setEvents(data);
+      } catch (err) {
+        console.error("Failed to load audit events:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
+  if (loading) return null;
+
+  if (events.length === 0) return null;
+
+  return (
+    <div className="dynamic-audit-section">
+      <h2>Live Recovery Events</h2>
+
+      {events.map((audit) => (
+        <div className="audit-item" key={audit.id}>
+          <div className="audit-content">
+            <div className="audit-content-top">
+              <h3>{audit.event}</h3>
+              <span className="audit-time">{audit.timestamp}</span>
+            </div>
+
+            <p>{audit.description}</p>
+
+            <span className="audit-tag">{audit.paymentId}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function AuditTrail() {
   return (
@@ -19,6 +68,8 @@ function AuditTrail() {
           <p>Complete history of AI decisions and recovery actions.</p>
         </div>
       </div>
+
+      <AuditTrailEvents />
 
       {/* Audit Summary */}
       <div className="audit-summary">

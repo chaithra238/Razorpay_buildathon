@@ -13,7 +13,9 @@ export type RecoveryStatus =
   | "pending"
   | "successful";
 
+
 export interface Payment {
+
   id: string;
 
   customer: string;
@@ -28,11 +30,13 @@ export interface Payment {
 
   riskLevel: RiskLevel;
 
-  recommendedAction: string;
-
-  recoveryStatus: RecoveryStatus;
-
   transactionTime: string;
 
-  recovered: boolean;
+
+  recommendedAction?: string;
+
+  recoveryStatus?: RecoveryStatus;
+
+  recovered?: boolean;
+
 }

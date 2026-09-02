@@ -4,6 +4,16 @@
   gap: 28px;
 }
 
+.dynamic-audit-section {
+  margin-bottom: 30px;
+}
+
+.dynamic-audit-section h2 {
+  margin-bottom: 15px;
+
+  font-size: 17px;
+}
+
 /* Summary */
 
 .audit-summary {
