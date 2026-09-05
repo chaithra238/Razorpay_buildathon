@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = "http://127.0.0.1:8000/api";
+import { api } from "./api";
 
 export interface DashboardStats {
   totalPayments: number;
@@ -23,9 +21,7 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const response = await axios.get(
-    `${API_URL}/dashboard/`
-  );
+  const response = await api.get("/dashboard/");
 
   return response.data;
 }

@@ -1,18 +1,13 @@
-import axios from "axios";
-
 import type { Payment } from "../types/payment";
 import { payments as mockPayments } from "../data/payments";
-
-
-const API_URL =
-  "http://127.0.0.1:8000/api";
+import { api } from "./api";
 
 
 export async function getPayments(): Promise<Payment[]> {
 
   try {
 
-    const response = await axios.get(`${API_URL}/payments/`);
+    const response = await api.get("/payments/");
 
     const payments = response.data.map((payment: Payment) => ({
       ...payment,

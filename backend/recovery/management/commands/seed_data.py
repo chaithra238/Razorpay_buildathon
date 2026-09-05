@@ -1,0 +1,167 @@
+from django.core.management.base import BaseCommand
+
+from recovery.models import Payment, RecoveryCase
+
+
+class Command(BaseCommand):
+    help = "Seed initial payment data"
+
+    def handle(self, *args, **kwargs):
+        payments = [
+            {
+                "id": "PAY-1001",
+                "customer": "Rahul Sharma",
+                "amount": 5000,
+                "payment_method": "UPI",
+                "failure_reason": "Bank Timeout",
+                "status": "at_risk",
+                "risk_level": "high",
+                "recommended_action": "Wait & Retry",
+                "recovery_status": "waiting",
+                "transaction_time": "Today, 10:32 AM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1002",
+                "customer": "Anjali Nair",
+                "amount": 8500,
+                "payment_method": "Card",
+                "failure_reason": "Payment Abandoned",
+                "status": "at_risk",
+                "risk_level": "medium",
+                "recommended_action": "Send Reminder",
+                "recovery_status": "in_progress",
+                "transaction_time": "Today, 09:45 AM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1003",
+                "customer": "Vikram Rao",
+                "amount": 12000,
+                "payment_method": "UPI",
+                "failure_reason": "Gateway Error",
+                "status": "at_risk",
+                "risk_level": "high",
+                "recommended_action": "Human Review",
+                "recovery_status": "human_review",
+                "transaction_time": "Today, 09:10 AM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1004",
+                "customer": "Priya Menon",
+                "amount": 6500,
+                "payment_method": "Net Banking",
+                "failure_reason": "Bank Timeout",
+                "status": "recovered",
+                "risk_level": "medium",
+                "recommended_action": "Wait & Retry",
+                "recovery_status": "recovered",
+                "transaction_time": "Yesterday, 04:20 PM",
+                "recovered": True,
+            },
+            {
+                "id": "PAY-1005",
+                "customer": "Arjun Kumar",
+                "amount": 10000,
+                "payment_method": "UPI",
+                "failure_reason": "Payment Abandoned",
+                "status": "at_risk",
+                "risk_level": "medium",
+                "recommended_action": "Send Payment Link",
+                "recovery_status": "in_progress",
+                "transaction_time": "Yesterday, 03:45 PM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1006",
+                "customer": "Sneha Reddy",
+                "amount": 7500,
+                "payment_method": "Card",
+                "failure_reason": "Bank Timeout",
+                "status": "recovered",
+                "risk_level": "low",
+                "recommended_action": "Wait & Retry",
+                "recovery_status": "recovered",
+                "transaction_time": "Yesterday, 01:30 PM",
+                "recovered": True,
+            },
+            {
+                "id": "PAY-1007",
+                "customer": "Kiran Das",
+                "amount": 15000,
+                "payment_method": "UPI",
+                "failure_reason": "Gateway Error",
+                "status": "at_risk",
+                "risk_level": "high",
+                "recommended_action": "Human Review",
+                "recovery_status": "human_review",
+                "transaction_time": "Yesterday, 11:20 AM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1008",
+                "customer": "Meera Nair",
+                "amount": 9000,
+                "payment_method": "Net Banking",
+                "failure_reason": "Payment Abandoned",
+                "status": "recovered",
+                "risk_level": "medium",
+                "recommended_action": "Send Reminder",
+                "recovery_status": "recovered",
+                "transaction_time": "Aug 28, 02:15 PM",
+                "recovered": True,
+            },
+            {
+                "id": "PAY-1009",
+                "customer": "Rohan Shetty",
+                "amount": 4500,
+                "payment_method": "UPI",
+                "failure_reason": "Bank Timeout",
+                "status": "at_risk",
+                "risk_level": "low",
+                "recommended_action": "Wait & Retry",
+                "recovery_status": "waiting",
+                "transaction_time": "Aug 28, 10:40 AM",
+                "recovered": False,
+            },
+            {
+                "id": "PAY-1010",
+                "customer": "Divya Rao",
+                "amount": 11000,
+                "payment_method": "Card",
+                "failure_reason": "Gateway Error",
+                "status": "at_risk",
+                "risk_level": "high",
+                "recommended_action": "Human Review",
+                "recovery_status": "human_review",
+                "transaction_time": "Aug 27, 05:00 PM",
+                "recovered": False,
+            },
+        ]
+
+        for data in payments:
+            payment, _ = Payment.objects.update_or_create(
+                id=data["id"],
+                defaults={
+                    "customer": data["customer"],
+                    "amount": data["amount"],
+                    "payment_method": data["payment_method"],
+                    "failure_reason": data["failure_reason"],
+                    "risk_level": data["risk_level"],
+                    "status": data["status"],
+                    "transaction_time": data["transaction_time"],
+                },
+            )
+
+            RecoveryCase.objects.update_or_create(
+                payment=payment,
+                defaults={
+                    "recommended_action": data["recommended_action"],
+                    "recovery_status": data["recovery_status"],
+                    "recovered_amount": data["amount"] if data["recovered"] else 0,
+                    "requires_human_approval": data["recovery_status"] == "human_review",
+                },
+            )
+
+        self.stdout.write(self.style.SUCCESS("Successfully seeded payment data!"))
