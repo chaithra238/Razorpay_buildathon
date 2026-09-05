@@ -1,74 +1,86 @@
+from decimal import Decimal
+
+
 def analyze_payment(payment):
+    score = 0
+    reasons = []
 
-    failure_reason = payment.failure_reason
+    failure_scores = {
+        "Bank Timeout": 30,
+        "Payment Abandoned": 40,
+        "Gateway Error": 60,
+    }
+    score += failure_scores.get(payment.failure_reason, 20)
+    reasons.append(f"Failure reason: {payment.failure_reason}")
 
-
-    if failure_reason == "Bank Timeout":
-
-        return {
-            "diagnosis":
-                "The payment failed because the bank did not respond within the expected time.",
-
-            "recommendedAction":
-                "Wait and Retry",
-
-            "confidence":
-                "high",
-
-            "requiresHumanApproval":
-                False,
-        }
-
-
-    elif failure_reason == "Payment Abandoned":
-
-        return {
-            "diagnosis":
-                "The customer started the payment process but did not complete the transaction.",
-
-            "recommendedAction":
-                "Send Reminder",
-
-            "confidence":
-                "medium",
-
-            "requiresHumanApproval":
-                False,
-        }
-
-
-    elif failure_reason == "Gateway Error":
-
-        return {
-            "diagnosis":
-                "The payment could not be completed because of a payment gateway issue.",
-
-            "recommendedAction":
-                "Human Review",
-
-            "confidence":
-                "medium",
-
-            "requiresHumanApproval":
-                True,
-        }
-
-
+    amount = Decimal(payment.amount)
+    if amount >= 10000:
+        score += 25
+        reasons.append("High transaction amount")
+    elif amount >= 5000:
+        score += 15
+        reasons.append("Medium transaction amount")
     else:
+        score += 5
+        reasons.append("Low transaction amount")
 
-        return {
-            "diagnosis":
-                "The system could not confidently determine the failure reason.",
+    payment_method_scores = {
+        "UPI": 10,
+        "Card": 15,
+        "Net Banking": 12,
+    }
+    score += payment_method_scores.get(payment.payment_method, 10)
+    reasons.append(f"Payment method: {payment.payment_method}")
 
-            "recommendedAction":
-                "Human Review",
+    score = min(score, 100)
 
-            "confidence":
-                "low",
+    if score >= 70:
+        risk_level = "high"
+    elif score >= 40:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
 
-            "requiresHumanApproval":
-                True,
-        }
+    if payment.failure_reason == "Bank Timeout":
+        recommended_action = "Retry Payment"
+        confidence = 85
+        requires_human_approval = False
+    elif payment.failure_reason == "Payment Abandoned":
+        recommended_action = "Send Payment Reminder"
+        confidence = 90
+        requires_human_approval = False
+    elif payment.failure_reason == "Gateway Error":
+        recommended_action = "Human Review"
+        confidence = 80
+        requires_human_approval = True
+    else:
+        recommended_action = "Manual Investigation"
+        confidence = 60
+        requires_human_approval = True
+
+    if requires_human_approval:
+        policy_allowed = False
+        policy_reason = "This recovery action requires human approval."
+    else:
+        policy_allowed = True
+        policy_reason = "Automatic recovery action is allowed."
+
+    diagnosis = (
+        "Payment was analyzed based on failure reason, transaction amount, "
+        "and payment method. Risk factors identified: "
+        f"{', '.join(reasons)}."
+    )
+
+    return {
+        "risk_score": score,
+        "risk_level": risk_level,
+        "diagnosis": diagnosis,
+        "recommended_action": recommended_action,
+        "confidence": confidence,
+        "policy_allowed": policy_allowed,
+        "policy_reason": policy_reason,
+        "requires_human_approval": requires_human_approval,
+    }
 
 
 def validate_recovery_action(payment, decision):
@@ -77,7 +89,7 @@ def validate_recovery_action(payment, decision):
     # If the recovery decision requires human approval,
     # automatic execution is blocked.
 
-    if decision["requiresHumanApproval"]:
+    if decision["requires_human_approval"]:
 
         return {
             "allowed": False,

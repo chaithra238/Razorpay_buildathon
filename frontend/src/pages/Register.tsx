@@ -9,6 +9,7 @@ function Register() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [error, setError] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -21,7 +22,7 @@ function Register() {
       setError("Passwords do not match.");
       return;
     }
-    signIn();
+    signIn(businessName);
     navigate("/", { replace: true });
   }
 
@@ -31,7 +32,7 @@ function Register() {
       <section className="auth-card auth-card-wide">
         <div className="auth-card-header"><span className="mobile-brand"><img src="/recoverai-mark.svg" alt="RecoverAI logo" /> RecoverAI</span><h2>Create merchant account</h2><p>Start managing revenue at risk with RecoverAI.</p></div>
         <form onSubmit={handleSubmit} className="auth-form register-form">
-          <div className="form-section"><span className="form-section-title">Business information</span><label>Business name<input type="text" placeholder="Acme Commerce" required /></label><label>Business email<input type="email" placeholder="finance@acme.com" required /></label></div>
+          <div className="form-section"><span className="form-section-title">Business information</span><label>Business name<input type="text" value={businessName} onChange={(event) => setBusinessName(event.target.value)} placeholder="Acme Commerce" required /></label><label>Business email<input type="email" placeholder="finance@acme.com" required /></label></div>
           <div className="form-section"><span className="form-section-title">Merchant information</span><label>Full name<input type="text" placeholder="Your name" required /></label><label>Email address<input type="email" placeholder="you@business.com" required /></label><label>Phone number<input type="tel" placeholder="+91 98765 43210" required /></label></div>
           <div className="form-section"><span className="form-section-title">Account security</span><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} placeholder="At least 8 characters" /></label><label>Confirm password<input type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required placeholder="Repeat your password" /></label><label>GSTIN <span className="optional">Optional</span><input type="text" placeholder="22AAAAA0000A1Z5" /></label></div>
           <label className="checkbox-label"><input type="checkbox" required /> I agree to the Terms and Privacy Policy.</label>

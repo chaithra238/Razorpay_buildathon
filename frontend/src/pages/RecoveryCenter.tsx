@@ -12,6 +12,11 @@ import type { RecoveryDecision } from "../services/recoveryEngine";
 
 import {
   analyzeRecovery,
+  analyzePayment,
+  approveRecovery,
+  completeRecovery,
+  getRecoveryCase,
+  type AnalyzePaymentResponse,
   executeRecovery,
 } from "../services/recoveryService";
 import type { PolicyResult } from "../services/policyEngine";
@@ -20,6 +25,13 @@ import "../css/recovery.css";
 
 function RecoveryCenter() {
   const [selectedPaymentId, setSelectedPaymentId] = useState("");
+
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalyzePaymentResponse | null>(null);
+
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const [error, setError] = useState("");
 
   const [apiPayments, setApiPayments] = useState<Payment[]>([]);
 
@@ -37,6 +49,12 @@ function RecoveryCenter() {
   const [executionStatus, setExecutionStatus] = useState<string | null>(null);
 
   const [executing, setExecuting] = useState(false);
+
+  const [completing, setCompleting] = useState(false);
+
+  const [approving, setApproving] = useState(false);
+
+  const [recoveryMessage, setRecoveryMessage] = useState("");
 
   const [recoveryResult, setRecoveryResult] = useState<{
     success: boolean;
@@ -74,6 +92,23 @@ function RecoveryCenter() {
 
   }, []);
 
+  async function handleAnalyzePayment(paymentId: string) {
+    try {
+      setAnalyzing(true);
+      setError("");
+      setSelectedPaymentId(paymentId);
+
+      const result = await analyzePayment(paymentId);
+
+      setAnalysisResult(result);
+    } catch (analysisError) {
+      console.error("AI analysis failed:", analysisError);
+      setError("Unable to analyze this payment. Please try again.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   const handleAnalyzeRecovery = async () => {
 
     setExecutionStatus(null);
@@ -103,7 +138,7 @@ function RecoveryCenter() {
 
   };
 
-  const handleExecuteRecovery = async () => {
+  const handleLegacyExecuteRecovery = async () => {
 
     if (!selectedPayment) {
       return;
@@ -115,25 +150,13 @@ function RecoveryCenter() {
 
       const response = await executeRecovery(selectedPayment.id);
 
-      alert(response.message);
-
-      if (response.success) {
-
-        setSelectedPayment({
-          ...selectedPayment,
-
-          status: "recovered",
-
-          recovered: true,
-        });
-
-      }
+      setExecutionStatus(response.message);
 
     } catch (error) {
 
       console.error("Recovery execution failed:", error);
 
-      alert("Failed to execute recovery.");
+      setExecutionStatus("Failed to execute recovery.");
 
     } finally {
 
@@ -142,6 +165,103 @@ function RecoveryCenter() {
     }
 
   };
+
+  async function handleExecuteRecovery() {
+    if (!analysisResult) return;
+
+    try {
+      setExecuting(true);
+      setRecoveryMessage("");
+
+      const result = await executeRecovery(analysisResult.payment_id);
+
+      setRecoveryMessage(result.message);
+      setAnalysisResult({
+        ...analysisResult,
+        recovery_status: result.recovery_status,
+      });
+    } catch (error) {
+      console.error("Recovery execution failed:", error);
+      setRecoveryMessage("Unable to execute recovery action.");
+    } finally {
+      setExecuting(false);
+    }
+  }
+
+  async function loadRecoveryCase(paymentId: string) {
+    try {
+      const result = await getRecoveryCase(paymentId);
+
+      setSelectedPaymentId(paymentId);
+      setError("");
+      setAnalysisResult({
+        message: "Stored recovery analysis loaded",
+        payment_id: result.payment_id,
+        customer: result.customer,
+        created: false,
+        risk_analysis: {
+          risk_score: result.risk_score,
+          risk_level: result.risk_level,
+          reasons: result.diagnosis
+            .replace("Risk factors: ", "")
+            .split(", "),
+        },
+        recovery_decision: {
+          recommended_action: result.recommended_action,
+          confidence: Number(result.confidence),
+          requires_human_approval: result.requires_human_approval,
+          reason: result.policy_reason,
+        },
+        recovery_status: result.recovery_status,
+      });
+    } catch (error) {
+      console.log("No existing recovery case found.", error);
+    }
+  }
+
+  async function handleCompleteRecovery() {
+    if (!analysisResult) return;
+
+    try {
+      setCompleting(true);
+      setRecoveryMessage("");
+
+      const result = await completeRecovery(analysisResult.payment_id);
+
+      setRecoveryMessage(result.message);
+      setAnalysisResult({
+        ...analysisResult,
+        recovery_status: result.recovery_status,
+      });
+    } catch (error) {
+      console.error("Complete recovery failed:", error);
+      setRecoveryMessage("Unable to complete recovery.");
+    } finally {
+      setCompleting(false);
+    }
+  }
+
+  async function handleApproveRecovery() {
+    if (!analysisResult) return;
+
+    try {
+      setApproving(true);
+      setRecoveryMessage("");
+
+      const result = await approveRecovery(analysisResult.payment_id);
+
+      setRecoveryMessage(result.message);
+      setAnalysisResult({
+        ...analysisResult,
+        recovery_status: result.recovery_status,
+      });
+    } catch (error) {
+      console.error("Recovery approval failed:", error);
+      setRecoveryMessage("Unable to approve recovery.");
+    } finally {
+      setApproving(false);
+    }
+  }
 
   return (
     <div className="recovery-page">
@@ -198,7 +318,7 @@ function RecoveryCenter() {
             <strong>{selectedPayment.failureReason}</strong>
           </div>
 
-          <div className="result-row">
+          <div className="result-row diagnosis-row">
             <span>AI Diagnosis</span>
             <strong>{decision.diagnosis}</strong>
           </div>
@@ -228,7 +348,7 @@ function RecoveryCenter() {
           <div className="recovery-action-section">
             <button
               className="execute-recovery-button"
-              onClick={handleExecuteRecovery}
+              onClick={handleLegacyExecuteRecovery}
               disabled={executing}
             >
               {executing
@@ -308,64 +428,189 @@ function RecoveryCenter() {
                 <th>Amount</th>
                 <th>Recovery Action</th>
                 <th>Status</th>
+                <th>AI Analysis</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr>
-                <td>#PAY-1001</td>
-                <td>Rahul Sharma</td>
-                <td>₹5,000</td>
+              {apiPayments.filter((payment) => payment.status === "at_risk").map((payment) => {
+                const isReview = payment.failureReason === "Gateway Error";
+                const isReminder = payment.failureReason === "Payment Abandoned";
 
-                <td>
-                  <span className="recovery-action retry-action">
-                    <RefreshCw size={15} />
-                    Wait & Retry
-                  </span>
-                </td>
+                return (
+                  <tr key={payment.id}>
+                    <td>#{payment.id}</td>
+                    <td>{payment.customer}</td>
+                    <td>₹{payment.amount.toLocaleString("en-IN")}</td>
 
-                <td>
-                  <span className="workflow-status waiting">Waiting</span>
-                </td>
-              </tr>
+                    <td>
+                      <span className={`recovery-action ${isReview ? "review-action" : isReminder ? "reminder-action" : "retry-action"}`}>
+                        {isReview ? <UserCheck size={15} /> : isReminder ? <Mail size={15} /> : <RefreshCw size={15} />}
+                        {isReview ? "Human Review" : isReminder ? "Send Reminder" : "Wait & Retry"}
+                      </span>
+                    </td>
 
-              <tr>
-                <td>#PAY-1002</td>
-                <td>Anjali Nair</td>
-                <td>₹8,500</td>
+                    <td>
+                      <span className={`workflow-status ${payment.recoveryStatus === "in_progress" ? "progress" : payment.recoveryStatus === "pending" ? "pending" : "waiting"}`}>
+                        {(payment.recoveryStatus ?? "waiting").replace("_", " ")}
+                      </span>
+                    </td>
 
-                <td>
-                  <span className="recovery-action reminder-action">
-                    <Mail size={15} />
-                    Send Reminder
-                  </span>
-                </td>
-
-                <td>
-                  <span className="workflow-status progress">In Progress</span>
-                </td>
-              </tr>
-
-              <tr>
-                <td>#PAY-1003</td>
-                <td>Vikram Rao</td>
-                <td>₹12,000</td>
-
-                <td>
-                  <span className="recovery-action review-action">
-                    <UserCheck size={15} />
-                    Human Review
-                  </span>
-                </td>
-
-                <td>
-                  <span className="workflow-status pending">Pending</span>
-                </td>
-              </tr>
+                    <td>
+                      <button
+                        onClick={() => handleAnalyzePayment(payment.id)}
+                        disabled={analyzing}
+                        className="analyze-button"
+                      >
+                        {analyzing && selectedPaymentId === payment.id ? "Analyzing..." : "Analyze with AI"}
+                      </button>
+                      <button
+                        onClick={() => loadRecoveryCase(payment.id)}
+                        className="view-analysis-button"
+                      >
+                        View Saved Analysis
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </section>
+
+      {error && <div className="ai-error">{error}</div>}
+
+      {analysisResult && (
+        <section className="ai-analysis-panel">
+          <div className="ai-analysis-header">
+            <div>
+              <h2>AI Recovery Analysis</h2>
+              <p>
+                Intelligent analysis for payment <strong>{analysisResult.payment_id}</strong>
+              </p>
+            </div>
+
+            <span className={`risk-badge ${analysisResult.risk_analysis.risk_level}`}>
+              {analysisResult.risk_analysis.risk_level.toUpperCase()} RISK
+            </span>
+          </div>
+
+          <div className="ai-metrics">
+            <div className="ai-metric-card">
+              <span>Risk Score</span>
+              <strong>{analysisResult.risk_analysis.risk_score}/100</strong>
+            </div>
+
+            <div className="ai-metric-card">
+              <span>AI Confidence</span>
+              <strong>{analysisResult.recovery_decision.confidence}%</strong>
+            </div>
+
+            <div className="ai-metric-card">
+              <span>Recommended Action</span>
+              <strong>{analysisResult.recovery_decision.recommended_action}</strong>
+            </div>
+          </div>
+
+          <div className="ai-explanation">
+            <h3>Why is this payment at risk?</h3>
+            <ul>
+              {analysisResult.risk_analysis.reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="ai-recommendation">
+            <h3>AI Recovery Recommendation</h3>
+            <p>{analysisResult.recovery_decision.reason}</p>
+          </div>
+
+          <div className="human-approval">
+            <strong>Human Approval:</strong>{" "}
+            {analysisResult.recovery_decision.requires_human_approval ? "Required" : "Not Required"}
+          </div>
+
+          <div className="recovery-action-section legacy-recovery-action">
+            <h3>Recovery Action</h3>
+            <p>
+              Current Status: <strong>{analysisResult.recovery_status}</strong>
+            </p>
+
+            {analysisResult.recovery_decision.requires_human_approval ? (
+              <>
+                {analysisResult.recovery_status === "human_review" && (
+                  <div className="approval-required">
+                    <p>⚠️ AI recommends human approval before proceeding.</p>
+                    <button
+                      className="approve-recovery-button"
+                      onClick={handleApproveRecovery}
+                      disabled={approving}
+                    >
+                      {approving ? "Approving..." : "Approve Recovery"}
+                    </button>
+                  </div>
+                )}
+
+                {analysisResult.recovery_status === "in_progress" && (
+                  <button
+                    className="complete-recovery-button"
+                    onClick={handleCompleteRecovery}
+                    disabled={completing}
+                  >
+                    {completing
+                      ? "Completing Recovery..."
+                      : "Complete Recovery"}
+                  </button>
+                )}
+
+                {analysisResult.recovery_status === "recovered" && (
+                  <div className="recovery-success">
+                    ✅ Payment successfully recovered!
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {analysisResult.recovery_status === "waiting" && (
+                  <button
+                    className="execute-recovery-button"
+                    onClick={handleExecuteRecovery}
+                    disabled={executing}
+                  >
+                    {executing
+                      ? "Executing Recovery..."
+                      : "Approve & Execute Recovery"}
+                  </button>
+                )}
+
+                {analysisResult.recovery_status === "in_progress" && (
+                  <button
+                    className="complete-recovery-button"
+                    onClick={handleCompleteRecovery}
+                    disabled={completing}
+                  >
+                    {completing
+                      ? "Completing Recovery..."
+                      : "Complete Recovery"}
+                  </button>
+                )}
+
+                {analysisResult.recovery_status === "recovered" && (
+                  <div className="recovery-success">
+                    ✅ Payment successfully recovered!
+                  </div>
+                )}
+              </>
+            )}
+
+            {recoveryMessage && (
+              <p className="recovery-message">{recoveryMessage}</p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Bottom Section */}
       <div className="recovery-bottom-grid">

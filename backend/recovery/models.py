@@ -1,4 +1,24 @@
 from django.db import models
+from django.contrib.auth.models import User
+
+
+class Merchant(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="merchant_profile",
+    )
+
+    business_name = models.CharField(max_length=200)
+
+    phone_number = models.CharField(max_length=20, blank=True)
+
+    gstin = models.CharField(max_length=20, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.business_name
 
 
 class Payment(models.Model):
@@ -54,6 +74,8 @@ class RecoveryCase(models.Model):
         on_delete=models.CASCADE,
         related_name="recovery_case",
     )
+
+    risk_score = models.IntegerField(default=0)
 
     diagnosis = models.TextField(blank=True)
 
