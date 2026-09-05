@@ -1,15 +1,74 @@
+import { useEffect, useState } from "react";
+
 import {
   TrendingUp,
   CircleDollarSign,
   AlertTriangle,
 } from "lucide-react";
 
+import type { Payment } from "../types/payment";
+import { getPayments } from "../services/paymentService";
+
 import "../css/analytics.css";
 
 function Analytics() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+
+  useEffect(() => {
+    async function loadPayments() {
+      try {
+        const data = await getPayments();
+        setPayments(data);
+      } catch (error) {
+        console.error("Failed to load payments:", error);
+      }
+    }
+
+    loadPayments();
+  }, []);
+
+  const atRiskPayments = payments.filter(
+    (payment) => payment.status === "at_risk"
+  );
+
+  const recoveredPayments = payments.filter(
+    (payment) => payment.status === "recovered"
+  );
+
+  const totalRevenueAtRisk = atRiskPayments.reduce(
+    (total, payment) => total + Number(payment.amount),
+    0
+  );
+
+  const totalRevenueRecovered = recoveredPayments.reduce(
+    (total, payment) => total + Number(payment.amount),
+    0
+  );
+
+  const recoveryRate =
+    payments.length > 0
+      ? ((recoveredPayments.length / payments.length) * 100).toFixed(1)
+      : "0";
+
+  const failureReasons: Record<string, number> = {};
+
+  atRiskPayments.forEach((payment) => {
+    const reason = payment.failureReason || "Other";
+
+    failureReasons[reason] = (failureReasons[reason] || 0) + 1;
+  });
+
+  const totalAtRisk = atRiskPayments.length || 1;
+
+  const reasonData = Object.entries(failureReasons).map(
+    ([reason, count]) => ({
+      reason,
+      percentage: Math.round((count / totalAtRisk) * 100),
+    })
+  );
+
   return (
     <div className="analytics-page">
-      {/* Page Title */}
       <div className="page-title">
         <div>
           <h1>Analytics</h1>
@@ -17,7 +76,6 @@ function Analytics() {
         </div>
       </div>
 
-      {/* Top Statistics */}
       <div className="analytics-stats">
         <div className="analytics-stat-card">
           <div className="analytics-icon risk">
@@ -26,8 +84,8 @@ function Analytics() {
 
           <div>
             <span>Total Revenue at Risk</span>
-            <strong>₹1,25,000</strong>
-            <small>Across 24 payments</small>
+            <strong>₹{totalRevenueAtRisk.toLocaleString("en-IN")}</strong>
+            <small>Across {atRiskPayments.length} payments</small>
           </div>
         </div>
 
@@ -38,8 +96,8 @@ function Analytics() {
 
           <div>
             <span>Total Revenue Recovered</span>
-            <strong>₹48,500</strong>
-            <small>Across 12 payments</small>
+            <strong>₹{totalRevenueRecovered.toLocaleString("en-IN")}</strong>
+            <small>Across {recoveredPayments.length} payments</small>
           </div>
         </div>
 
@@ -50,67 +108,13 @@ function Analytics() {
 
           <div>
             <span>Recovery Rate</span>
-            <strong>38.8%</strong>
+            <strong>{recoveryRate}%</strong>
             <small>Current performance</small>
           </div>
         </div>
       </div>
 
-      {/* Main Analytics Grid */}
       <div className="analytics-grid">
-        {/* Recovery Performance */}
-        <section className="analytics-section">
-          <div className="section-header">
-            <div>
-              <h2>Recovery Performance</h2>
-              <p>Recovered revenue over time.</p>
-            </div>
-          </div>
-
-          <div className="bar-chart">
-            <div className="chart-column">
-              <div className="bar-wrapper">
-                <div className="bar bar-one"></div>
-              </div>
-
-              <span>Mon</span>
-            </div>
-
-            <div className="chart-column">
-              <div className="bar-wrapper">
-                <div className="bar bar-two"></div>
-              </div>
-
-              <span>Tue</span>
-            </div>
-
-            <div className="chart-column">
-              <div className="bar-wrapper">
-                <div className="bar bar-three"></div>
-              </div>
-
-              <span>Wed</span>
-            </div>
-
-            <div className="chart-column">
-              <div className="bar-wrapper">
-                <div className="bar bar-four"></div>
-              </div>
-
-              <span>Thu</span>
-            </div>
-
-            <div className="chart-column">
-              <div className="bar-wrapper">
-                <div className="bar bar-five"></div>
-              </div>
-
-              <span>Fri</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Failure Reasons */}
         <section className="analytics-section">
           <div className="section-header">
             <div>
@@ -120,59 +124,73 @@ function Analytics() {
           </div>
 
           <div className="reason-list">
+            {reasonData.length === 0 ? (
+              <p>No at-risk payment data available.</p>
+            ) : (
+              reasonData.map((item) => (
+                <div className="reason-item" key={item.reason}>
+                  <div className="reason-info">
+                    <span>{item.reason}</span>
+                    <strong>{item.percentage}%</strong>
+                  </div>
+
+                  <div className="progress-bar">
+                    <div
+                      className="progress"
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="analytics-section">
+          <div className="section-header">
+            <div>
+              <h2>Recovery Summary</h2>
+              <p>Current recovery performance.</p>
+            </div>
+          </div>
+
+          <div className="reason-list">
             <div className="reason-item">
               <div className="reason-info">
-                <span>Bank Timeout</span>
-                <strong>40%</strong>
-              </div>
-
-              <div className="progress-bar">
-                <div className="progress timeout-progress"></div>
+                <span>Total Payments</span>
+                <strong>{payments.length}</strong>
               </div>
             </div>
 
             <div className="reason-item">
               <div className="reason-info">
-                <span>Payment Abandoned</span>
-                <strong>30%</strong>
-              </div>
-
-              <div className="progress-bar">
-                <div className="progress abandoned-progress"></div>
+                <span>At-Risk Payments</span>
+                <strong>{atRiskPayments.length}</strong>
               </div>
             </div>
 
             <div className="reason-item">
               <div className="reason-info">
-                <span>Gateway Error</span>
-                <strong>20%</strong>
-              </div>
-
-              <div className="progress-bar">
-                <div className="progress gateway-progress"></div>
+                <span>Recovered Payments</span>
+                <strong>{recoveredPayments.length}</strong>
               </div>
             </div>
 
             <div className="reason-item">
               <div className="reason-info">
-                <span>Other</span>
-                <strong>10%</strong>
-              </div>
-
-              <div className="progress-bar">
-                <div className="progress other-progress"></div>
+                <span>Recovery Rate</span>
+                <strong>{recoveryRate}%</strong>
               </div>
             </div>
           </div>
         </section>
       </div>
 
-      {/* Recovery Actions */}
       <section className="analytics-section action-performance">
         <div className="section-header">
           <div>
             <h2>Recovery Action Performance</h2>
-            <p>Effectiveness of each recovery strategy.</p>
+            <p>Recovery decisions generated by RecoverAI.</p>
           </div>
         </div>
 
@@ -180,45 +198,35 @@ function Analytics() {
           <table className="action-table">
             <thead>
               <tr>
-                <th>Recovery Action</th>
-                <th>Attempts</th>
-                <th>Successful</th>
-                <th>Success Rate</th>
-                <th>Revenue Recovered</th>
+                <th>Metric</th>
+                <th>Value</th>
               </tr>
             </thead>
 
             <tbody>
               <tr>
-                <td>Wait & Retry</td>
-                <td>12</td>
-                <td>7</td>
-                <td>58%</td>
-                <td>₹22,000</td>
+                <td>Total Payments Analyzed</td>
+                <td>{payments.length}</td>
               </tr>
 
               <tr>
-                <td>Send Reminder</td>
-                <td>10</td>
-                <td>4</td>
-                <td>40%</td>
-                <td>₹15,500</td>
+                <td>Payments Recovered</td>
+                <td>{recoveredPayments.length}</td>
               </tr>
 
               <tr>
-                <td>Payment Link</td>
-                <td>6</td>
-                <td>1</td>
-                <td>17%</td>
-                <td>₹6,000</td>
+                <td>Payments At Risk</td>
+                <td>{atRiskPayments.length}</td>
               </tr>
 
               <tr>
-                <td>Human Review</td>
-                <td>4</td>
-                <td>0</td>
-                <td>Pending</td>
-                <td>₹0</td>
+                <td>Revenue Recovered</td>
+                <td>₹{totalRevenueRecovered.toLocaleString("en-IN")}</td>
+              </tr>
+
+              <tr>
+                <td>Recovery Rate</td>
+                <td>{recoveryRate}%</td>
               </tr>
             </tbody>
           </table>

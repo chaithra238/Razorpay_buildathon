@@ -1,12 +1,3 @@
-import {
-  AlertTriangle,
-  Brain,
-  ShieldCheck,
-  RefreshCw,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
-
 import { useEffect, useState } from "react";
 
 import type { AuditEvent } from "../types/audit";

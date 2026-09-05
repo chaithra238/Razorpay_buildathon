@@ -4,6 +4,15 @@
   gap: 28px;
 }
 
+.recovery-selector, .recovery-result, .recovery-stat-card, .recovery-section {
+  border-color: #e4eaf3;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(27, 50, 88, .045);
+}
+
+.recovery-selector { padding: 24px; }
+.recovery-selector button, .execute-recovery-button { font-weight: 700; }
+
 .recovery-selector {
   display: flex;
   align-items: flex-end;
@@ -328,8 +337,26 @@
 
 .recovery-bottom-grid {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
+}
+
+@media (max-width: 700px) {
+  .recovery-selector { align-items: stretch; flex-direction: column; }
+  .recovery-selector select { width: 100%; min-width: 0; }
+  .recovery-selector button { width: 100%; }
+  .recovery-stats { grid-template-columns: repeat(2, 1fr); }
+  .recovery-bottom-grid { grid-template-columns: 1fr; }
+  .result-row { gap: 18px; }
+  .result-row strong { text-align: right; }
+}
+
+@media (max-width: 480px) {
+  .recovery-page { gap: 18px; }
+  .recovery-selector, .recovery-result, .recovery-section { padding: 18px; }
+  .recovery-stats { gap: 10px; }
+  .recovery-stat-card { padding: 15px; }
+  .recovery-stat-card strong { font-size: 20px; }
 }
 
 /* Workflow */

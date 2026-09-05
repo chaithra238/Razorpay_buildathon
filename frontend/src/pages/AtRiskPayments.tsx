@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
-import { payments } from "../data/payments";
 import type { Payment } from "../types/payment";
+import { getPayments } from "../services/paymentService";
 import "../css/payments.css";
 import "../css/at-risk-payments.css";
 
@@ -15,6 +15,19 @@ function AtRiskPayments() {
   const [riskFilter, setRiskFilter] = useState("all");
 
   const [statusFilter, setStatusFilter] = useState("all");
+  const [payments, setPayments] = useState<Payment[]>([]);
+
+  useEffect(() => {
+    async function loadPayments() {
+      try {
+        setPayments(await getPayments());
+      } catch (error) {
+        console.error("Failed to load payments:", error);
+      }
+    }
+
+    loadPayments();
+  }, []);
 
   const atRiskPayments: Payment[] = payments.filter(
     (payment) => payment.status === "at_risk"
@@ -34,6 +47,15 @@ function AtRiskPayments() {
     return matchesSearch && matchesRisk && matchesStatus;
   });
 
+  const revenueAtRisk = atRiskPayments.reduce(
+    (total, payment) => total + Number(payment.amount),
+    0
+  );
+
+  const highPriority = atRiskPayments.filter(
+    (payment) => payment.riskLevel === "high"
+  ).length;
+
   return (
     <div className="payments-page">
       {/* Page Title */}
@@ -48,17 +70,17 @@ function AtRiskPayments() {
       <div className="payment-summary">
         <div className="summary-item">
           <span>Total At Risk</span>
-          <strong>24</strong>
+          <strong>{atRiskPayments.length}</strong>
         </div>
 
         <div className="summary-item">
           <span>Revenue at Risk</span>
-          <strong>₹1,25,000</strong>
+          <strong>₹{revenueAtRisk.toLocaleString("en-IN")}</strong>
         </div>
 
         <div className="summary-item">
           <span>High Priority</span>
-          <strong>6</strong>
+          <strong>{highPriority}</strong>
         </div>
       </div>
 
@@ -134,8 +156,8 @@ function AtRiskPayments() {
                   <td>{payment.recommendedAction}</td>
 
                   <td>
-                    <span className={`status-badge ${payment.recoveryStatus}`}>
-                      {payment.recoveryStatus.replace("_", " ")}
+                    <span className={`status-badge ${payment.recoveryStatus ?? "pending"}`}>
+                      {(payment.recoveryStatus ?? "pending").replace("_", " ")}
                     </span>
                   </td>
                 </tr>

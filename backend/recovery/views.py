@@ -11,7 +11,6 @@ from .services.recovery_engine import (
 	analyze_payment,
 	validate_recovery_action,
 )
-from .services.execution_engine import execute_recovery
 
 
 @api_view(["GET"])
@@ -129,97 +128,150 @@ def analyze_recovery(request):
 
 
 @api_view(["POST"])
-def execute_recovery_action(request):
+def execute_recovery(request):
 
 	payment_id = request.data.get("paymentId")
-
-	if not payment_id:
-
-		return Response(
-			{"error": "paymentId is required."},
-			status=status.HTTP_400_BAD_REQUEST,
-		)
-
-
-	@api_view(["GET"])
-	def audit_event_list(request):
-
-		audit_events = AuditEvent.objects.all().order_by(
-			"-timestamp"
-		)
-
-		serializer = AuditEventSerializer(
-			audit_events,
-			many=True
-		)
-
-		return Response(serializer.data)
 
 	try:
 
 		payment = Payment.objects.get(id=payment_id)
 
 	except Payment.DoesNotExist:
-
-		return Response({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
+		return Response({"error": "Payment not found"}, status=404)
 
 	try:
 
 		recovery_case = RecoveryCase.objects.get(payment=payment)
 
 	except RecoveryCase.DoesNotExist:
-
 		return Response(
-			{"error": "Recovery analysis must be completed before execution."},
-			status=status.HTTP_400_BAD_REQUEST,
+			{"error": "Recovery analysis must be completed first"},
+			status=400,
 		)
 
-	result = execute_recovery(payment, recovery_case)
+	if not recovery_case.policy_allowed:
+		recovery_case.recovery_status = "human_review"
+		recovery_case.save()
 
-	# Update recovery status
-	recovery_case.recovery_status = result["status"]
-	recovery_case.recovered_amount = result["recoveredAmount"]
-	recovery_case.save()
-
-	# If recovery succeeded, update payment status
-	if result["success"]:
-		payment.status = "recovered"
-		payment.save()
-
-	# Create execution audit event
-	AuditEvent.objects.create(
-		payment=payment,
-		event="Recovery Action Executed",
-		description=(f"Recovery action initiated: {recovery_case.recommended_action}"),
-		event_type="action",
-	)
-
-	# If recovery succeeded, create success audit event
-	if result["success"]:
 		AuditEvent.objects.create(
 			payment=payment,
-			event="Payment Recovered",
-			description=(f"₹{payment.amount} was successfully recovered."),
-			event_type="success",
-		)
-
-	# If human approval is required
-	elif result["status"] == "human_review":
-		AuditEvent.objects.create(
-			payment=payment,
-			event="Human Approval Requested",
-			description=(
-				"Automatic recovery action was blocked " "and requires human approval."
-			),
+			event="Recovery requires human review",
+			description="The recovery action was blocked by policy.",
 			event_type="review",
 		)
 
-	return Response(
-		{
-			"paymentId": payment.id,
-			"success": result["success"],
-			"message": result["message"],
-			"recoveredAmount": result["recoveredAmount"],
-			"recoveryStatus": recovery_case.recovery_status,
-		}
+		return Response({
+			"success": False,
+			"message": "Recovery requires human approval.",
+		})
+
+	payment.status = "recovered"
+	payment.save()
+
+	recovery_case.recovery_status = "recovered"
+	recovery_case.recovered_amount = payment.amount
+	recovery_case.save()
+
+	AuditEvent.objects.create(
+		payment=payment,
+		event="Payment successfully recovered",
+		description=f"₹{payment.amount} was successfully recovered.",
+		event_type="success",
 	)
+
+	return Response({
+		"success": True,
+		"message": "Payment successfully recovered.",
+	})
+
+
+
+@api_view(["GET"])
+def audit_event_list(request):
+
+	audit_events = AuditEvent.objects.all().order_by(
+		"-timestamp"
+	)
+
+	serializer = AuditEventSerializer(
+		audit_events,
+		many=True
+	)
+
+	return Response(serializer.data)
+
+
+
+@api_view(["GET"])
+def dashboard_stats(request):
+	total_payments = Payment.objects.count()
+
+	at_risk_payments = Payment.objects.filter(
+		status="at_risk"
+	).count()
+
+	recovered_payments = Payment.objects.filter(
+		status="recovered"
+	).count()
+
+	payments_analyzed = RecoveryCase.objects.count()
+
+	recovery_attempts = RecoveryCase.objects.filter(
+		recovery_status__in=[
+			"in_progress",
+			"recovered",
+		]
+	).count()
+
+	successful_recoveries = RecoveryCase.objects.filter(
+		recovery_status="recovered"
+	).count()
+
+	human_review_cases = RecoveryCase.objects.filter(
+		recovery_status="human_review"
+	).count()
+
+	recovered_cases = RecoveryCase.objects.filter(
+		recovery_status="recovered"
+	)
+
+	total_recovered_amount = sum(
+		case.recovered_amount
+		for case in recovered_cases
+	)
+
+	recovery_rate = 0
+
+	if recovery_attempts > 0:
+
+		recovery_rate = round(
+			(
+				successful_recoveries
+				/ recovery_attempts
+			) * 100,
+			2
+		)
+
+	return Response({
+
+		"totalPayments": total_payments,
+
+		"atRiskPayments": at_risk_payments,
+
+		"recoveredPayments": recovered_payments,
+
+		"paymentsAnalyzed": payments_analyzed,
+
+		"recoveryAttempts": recovery_attempts,
+
+		"successfulRecoveries": successful_recoveries,
+
+		"humanReviewCases": human_review_cases,
+
+		"totalRecoveredAmount": float(
+			total_recovered_amount
+		),
+
+		"recoveryRate": recovery_rate,
+
+	})

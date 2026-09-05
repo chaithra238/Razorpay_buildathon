@@ -142,20 +142,6 @@ function Settings() {
 
       </section>
 
-      {/* Information Section */}
-
-      <section className="settings-section info-section">
-
-        <h2>About Recovery Policies</h2>
-
-        <p>
-          These settings define the boundaries within which RecoverAI
-          can operate. AI recommendations must pass policy validation
-          before a recovery action can be executed.
-        </p>
-
-      </section>
-
       {/* Save Button */}
 
       <div className="settings-actions">

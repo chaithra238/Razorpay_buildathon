@@ -201,3 +201,17 @@
     justify-content: center;
   }
 }
+
+.summary-item, .payments-table-container {
+  border-color: #e4eaf3;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(27, 50, 88, .045);
+}
+
+.payment-controls input, .payment-controls select {
+  background: #fff;
+  border-color: #dce4ef;
+}
+
+.payments-table th { background: #f7f9fc; }
+.payments-table td, .payments-table th { white-space: nowrap; }

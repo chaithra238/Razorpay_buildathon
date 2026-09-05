@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { AuditEvent } from "../data/audit";
+import type { AuditEvent } from "../types/audit";
 
 const API_URL =
   "http://127.0.0.1:8000/api";

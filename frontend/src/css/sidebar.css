@@ -1,18 +1,23 @@
 .sidebar {
-  width: 250px;
+  width: 76px;
   height: 100vh;
-
   background: #111827;
   color: white;
-
   display: flex;
   flex-direction: column;
-
-  padding: 24px 16px;
-
+  padding: 24px 10px 16px;
   position: fixed;
   left: 0;
   top: 0;
+  z-index: 40;
+  overflow: hidden;
+  box-shadow: 8px 0 30px rgba(13, 27, 52, .08);
+  transition: width .22s ease;
+}
+
+.sidebar:hover,
+.sidebar:focus-within {
+  width: 250px;
 }
 
 .sidebar-logo {
@@ -20,39 +25,48 @@
   align-items: center;
   gap: 12px;
 
-  padding: 0 8px;
-  margin-bottom: 40px;
+  padding: 0 9px;
+  margin-bottom: 32px;
+  min-width: 220px;
 }
 
 .logo-icon {
   width: 42px;
   height: 42px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: #2563eb;
-
-  border-radius: 10px;
-
-  font-size: 20px;
-  font-weight: bold;
+  object-fit: contain;
 }
 
 .sidebar-logo h2 {
   font-size: 20px;
+  white-space: nowrap;
 }
 
 .sidebar-logo span {
   font-size: 12px;
   color: #9ca3af;
+  white-space: nowrap;
+}
+
+.sidebar-logo > div:last-child,
+.nav-item span {
+  opacity: 0;
+  transition: opacity .16s ease;
+}
+
+.sidebar:hover .sidebar-logo > div:last-child,
+.sidebar:focus-within .sidebar-logo > div:last-child,
+.sidebar:hover .nav-item span,
+.sidebar:focus-within .nav-item span {
+  opacity: 1;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0 2px;
 }
 
 .nav-item {
@@ -60,14 +74,15 @@
   align-items: center;
   gap: 12px;
 
-  padding: 12px;
+  padding: 12px 13px;
 
   border-radius: 8px;
 
   color: #9ca3af;
   text-decoration: none;
 
-  transition: 0.2s;
+  transition: .2s;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
@@ -80,6 +95,27 @@
   color: white;
 }
 
+.nav-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .sidebar-bottom {
   margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.sidebar-overlay { display: none; }
+
+@media (max-width: 700px) {
+  .sidebar { width: 250px; height: 100dvh; transform: translateX(-100%); transition: transform .25s ease; }
+  .sidebar:hover, .sidebar:focus-within { width: 250px; }
+  .sidebar.sidebar-open { transform: translateX(0); }
+  .sidebar .sidebar-logo > div:last-child, .sidebar .nav-item span { opacity: 1; }
+  .sidebar-overlay { display: block; position: fixed; inset: 0; z-index: 35; border: 0; background: rgba(7, 15, 30, .48); }
 }

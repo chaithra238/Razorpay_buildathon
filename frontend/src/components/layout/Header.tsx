@@ -1,26 +1,41 @@
-import { Bell, CircleUserRound } from "lucide-react";
+import { Bell, CircleUserRound, Menu } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 import "../../css/header.css";
 
-function Header() {
+type HeaderProps = {
+  onMenuClick: () => void;
+};
+
+function Header({ onMenuClick }: HeaderProps) {
+  const location = useLocation();
+  const pageName = location.pathname.split("/")[1] || "dashboard";
+
   return (
     <header className="header">
       <div className="header-left">
-        <h1>RecoverAI</h1>
-        <p>AI-Powered Revenue Recovery</p>
+        <button className="menu-button" onClick={onMenuClick} aria-label="Open navigation">
+          <Menu size={21} />
+        </button>
+        <div>
+          <span className="eyebrow">Merchant workspace</span>
+          <h1>{pageName.replaceAll("-", " ")}</h1>
+        </div>
       </div>
 
       <div className="header-right">
-        <button className="notification-button">
+        <button className="notification-button" aria-label="Notifications">
           <Bell size={20} />
         </button>
 
         <div className="user-profile">
-          <CircleUserRound size={28} />
+          <div className="user-avatar">
+            <CircleUserRound size={32} />
+          </div>
 
           <div>
             <span className="user-name">Merchant</span>
-            <span className="user-role">Admin</span>
+            <span className="user-role">Merchant</span>
           </div>
         </div>
       </div>

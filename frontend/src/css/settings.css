@@ -206,3 +206,11 @@
     width: 100%;
   }
 }
+
+.settings-section {
+  border-color: #e4eaf3;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(27, 50, 88, .045);
+}
+
+.setting-item:last-child { border-bottom: 0; }

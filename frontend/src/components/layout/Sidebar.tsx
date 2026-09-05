@@ -5,27 +5,45 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
+  LogOut,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { signOut } from "../../services/authService";
 
 import "../../css/sidebar.css";
 
-function Sidebar() {
+type SidebarProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+function Sidebar({ open, onClose }: SidebarProps) {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    signOut();
+    onClose();
+    navigate("/login", { replace: true });
+  }
+
   return (
-    <aside className="sidebar">
+    <>
+      {open && <button className="sidebar-overlay" onClick={onClose} aria-label="Close navigation" />}
+      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="logo-icon">R</div>
+        <img className="logo-icon" src="/recoverai-mark.svg" alt="RecoverAI logo" />
 
         <div>
           <h2>RecoverAI</h2>
-          <span>Revenue Recovery</span>
+          <span>AI-powered recovery</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" onClick={onClose}>
         <NavLink to="/" className="nav-item">
           <LayoutDashboard size={20} />
           <span>Dashboard</span>
@@ -36,7 +54,7 @@ function Sidebar() {
           <span>At-Risk Payments</span>
         </NavLink>
 
-        <NavLink to="/recovery" className="nav-item">
+        <NavLink to="/recovery-center" className="nav-item">
           <RefreshCw size={20} />
           <span>Recovery Center</span>
         </NavLink>
@@ -46,7 +64,7 @@ function Sidebar() {
           <span>Analytics</span>
         </NavLink>
 
-        <NavLink to="/audit" className="nav-item">
+        <NavLink to="/audit-trail" className="nav-item">
           <ClipboardList size={20} />
           <span>Audit Trail</span>
         </NavLink>
@@ -58,8 +76,13 @@ function Sidebar() {
           <Settings size={20} />
           <span>Settings</span>
         </NavLink>
+        <button className="nav-item nav-button" onClick={handleLogout}>
+          <LogOut size={20} />
+          <span>Log out</span>
+        </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 

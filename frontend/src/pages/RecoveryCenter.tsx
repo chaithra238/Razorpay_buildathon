@@ -4,10 +4,6 @@ import {
   RefreshCw,
   Mail,
   UserCheck,
-  SearchCheck,
-  Brain,
-  ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 
 import { getPayments } from "../services/paymentService";
@@ -40,9 +36,7 @@ function RecoveryCenter() {
 
   const [executionStatus, setExecutionStatus] = useState<string | null>(null);
 
-  const [executionMessage, setExecutionMessage] = useState<string | null>(null);
-
-  const [executionSuccess, setExecutionSuccess] = useState<boolean | null>(null);
+  const [executing, setExecuting] = useState(false);
 
   const [recoveryResult, setRecoveryResult] = useState<{
     success: boolean;
@@ -117,11 +111,11 @@ function RecoveryCenter() {
 
     try {
 
+      setExecuting(true);
+
       const response = await executeRecovery(selectedPayment.id);
 
-      setExecutionMessage(response.message);
-
-      setExecutionSuccess(response.success);
+      alert(response.message);
 
       if (response.success) {
 
@@ -139,9 +133,11 @@ function RecoveryCenter() {
 
       console.error("Recovery execution failed:", error);
 
-      setExecutionMessage("Recovery execution failed. Please try again.");
+      alert("Failed to execute recovery.");
 
-      setExecutionSuccess(false);
+    } finally {
+
+      setExecuting(false);
 
     }
 
@@ -156,6 +152,8 @@ function RecoveryCenter() {
           <p>Monitor active revenue recovery workflows.</p>
         </div>
       </div>
+
+      {loadingError && <div className="error-banner">{loadingError}</div>}
 
       <div className="recovery-selector">
         <div>
@@ -231,8 +229,11 @@ function RecoveryCenter() {
             <button
               className="execute-recovery-button"
               onClick={handleExecuteRecovery}
+              disabled={executing}
             >
-              {policyResult.allowed
+              {executing
+                ? "Executing..."
+                : policyResult.allowed
                 ? "Execute Recovery Action"
                 : "Request Human Approval"}
             </button>
@@ -368,79 +369,6 @@ function RecoveryCenter() {
 
       {/* Bottom Section */}
       <div className="recovery-bottom-grid">
-        {/* Workflow */}
-        <section className="recovery-section">
-          <div className="section-header">
-            <div>
-              <h2>Recovery Workflow</h2>
-              <p>How RecoverAI processes a case.</p>
-            </div>
-          </div>
-
-            {loadingError && (
-              <div className="error-banner">
-                {loadingError}
-              </div>
-            )}
-
-          <div className="workflow-list">
-            <div className="workflow-step completed">
-              <div className="workflow-icon">
-                <SearchCheck size={18} />
-              </div>
-
-              <div>
-                <h3>Detect</h3>
-                <p>Identify revenue at risk.</p>
-              </div>
-            </div>
-
-            <div className="workflow-step completed">
-              <div className="workflow-icon">
-                <Brain size={18} />
-              </div>
-
-              <div>
-                <h3>Analyze</h3>
-                <p>Understand the failure reason.</p>
-              </div>
-            </div>
-
-            <div className="workflow-step completed">
-              <div className="workflow-icon">
-                <ShieldCheck size={18} />
-              </div>
-
-              <div>
-                <h3>Policy Check</h3>
-                <p>Validate the recommended action.</p>
-              </div>
-            </div>
-
-            <div className="workflow-step current">
-              <div className="workflow-icon">
-                <RefreshCw size={18} />
-              </div>
-
-              <div>
-                <h3>Execute</h3>
-                <p>Perform the recovery action.</p>
-              </div>
-            </div>
-
-            <div className="workflow-step">
-              <div className="workflow-icon">
-                <CheckCircle2 size={18} />
-              </div>
-
-              <div>
-                <h3>Verify</h3>
-                <p>Confirm the final payment result.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Rules */}
         <section className="recovery-section">
           <div className="section-header">

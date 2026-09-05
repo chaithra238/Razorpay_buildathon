@@ -41,8 +41,8 @@ function PaymentDetails() {
           <p>Detailed recovery analysis and action history.</p>
         </div>
 
-        <span className={`status-badge ${payment.recoveryStatus}`}>
-          {payment.recoveryStatus.replace("_", " ")}
+        <span className={`status-badge ${payment.recoveryStatus ?? "pending"}`}>
+          {(payment.recoveryStatus ?? "pending").replace("_", " ")}
         </span>
       </div>
 
